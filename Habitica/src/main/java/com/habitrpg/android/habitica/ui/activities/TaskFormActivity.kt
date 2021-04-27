@@ -76,6 +76,7 @@ class TaskFormActivity : BaseActivity() {
     }
 
     private var canSave: Boolean = false
+    private var isFormDirty: Boolean = false
 
     private var tintColor: Int = 0
     set(value) {
@@ -244,6 +245,21 @@ class TaskFormActivity : BaseActivity() {
         return super.onOptionsItemSelected(item)
     }
 
+    override fun onBackPressed() {
+        checkCanSave()
+        if (isFormDirty && canSave) {
+            val alert = HabiticaAlertDialog(this)
+            alert.setTitle(R.string.are_you_sure)
+            alert.addButton(R.string.abandon_changes, false, true) { _, _ ->
+                super.onBackPressed()
+            }
+            alert.addCancelButton()
+            alert.show()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
     private fun checkCanSave() {
         val newCanSave = binding.textEditText.text?.isNotBlank() == true
         if (newCanSave != canSave) {
@@ -375,9 +391,16 @@ class TaskFormActivity : BaseActivity() {
             task.checklist?.let { binding.checklistContainer.checklistItems = it }
             binding.remindersContainer.taskType = taskType
             task.reminders?.let { binding.remindersContainer.reminders = it }
+
         }
         task.attribute?.let { selectedStat = it }
         setAllTagSelections()
+
+        val dirtyWatcher = OnChangeTextWatcher { _, _, _, count ->
+            isFormDirty = isFormDirty || count > 0
+        }
+        binding.notesEditText.addTextChangedListener(dirtyWatcher)
+        binding.textEditText.addTextChangedListener(dirtyWatcher)
     }
 
     private fun setSelectedAttribute(attributeName: String) {
